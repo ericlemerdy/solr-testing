@@ -1,24 +1,22 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-
 	<groupId>fr.free.lemerdy.eric</groupId>
 	<artifactId>solr-testing</artifactId>
 	<version>1.0-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	
-	<name>Sample maven project to demonstrate testing capabilities of jersey and solr testing.</name>
-
+	<name>Sample maven project to demonstrate how to test solr configuration with maven.</name>
 	<scm>
 		<connection>scm:git:git://github.com/ericlemerdy/solr-testing.git</connection>
 		<developerConnection>scm:git:ssh://github.com:ericlemerdy/solr-testing.git</developerConnection>
 	</scm>
-
+	<properties>
+		<solr.config.dir>${basedir}</solr.config.dir>
+	</properties>
 	<modules>
-		<module>jersey-webapp</module>
 		<module>solr-config</module>
+		<module>solr-integration-tests</module>
 	</modules>
-
 	<repositories>
 		<!-- Java net repository for jersey -->
 		<repository>
@@ -27,7 +25,6 @@
 			<url>http://download.java.net/maven/2</url>
 		</repository>
 	</repositories>
-
 	<build>
 		<plugins>
 			<!-- Using java 1.6 compliance -->
@@ -39,7 +36,61 @@
 					<target>1.6</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-wars</id>
+						<phase>package</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/war</outputDirectory>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.apache.solr</groupId>
+									<artifactId>solr</artifactId>
+									<version>3.2.0</version>
+									<type>war</type>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.mortbay.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>7.1.3.v20100526</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.apache.solr</groupId>
+						<artifactId>solr</artifactId>
+						<version>3.2.0</version>
+						<type>war</type>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<stopKey>foo</stopKey>
+					<stopPort>9999</stopPort>
+					<systemProperties>
+						<systemProperty>
+							<name>solr.solr.home</name>
+							<value>${solr.config.dir}/solr-config/src/main/config</value>
+						</systemProperty>
+						<systemProperty>
+							<name>solr.data.dir</name>
+							<value>${project.build.directory}/data</value>
+						</systemProperty>
+					</systemProperties>
+					<webApp>${project.build.directory}/war/solr-3.2.0.war</webApp>
+					<webAppConfig>
+						<contextPath>/solr</contextPath>
+					</webAppConfig>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
-
 </project>
